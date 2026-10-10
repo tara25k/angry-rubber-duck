@@ -1,6 +1,6 @@
 # The Angry Rubber Duck
 
-Note-taking prototype with an angry duck critic powered by Gemini (Vertex AI).
+Decision-making prototype with an angry duck critic powered by Gemini (Vertex AI).
 
 ```sh
 gcloud auth application-default login   # once

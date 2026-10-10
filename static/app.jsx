@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 
 const KEY = "angry-duck-notes";
-const newNote = () => ({
+const newDecision = () => ({
   id: crypto.randomUUID(),
-  title: "Untitled note",
+  title: "Untitled decision",
   body: "",
-  persona: "critic",
   comments: [],
   chat: [],
 });
@@ -40,42 +39,44 @@ function DuckComment({ c, onResolve, onReply }) {
 }
 
 function App() {
-  const [notes, setNotes] = useState(() => {
+  const [decisions, setDecisions] = useState(() => {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    return saved?.length ? saved : [newNote()];
+    if (!saved?.length) return [newDecision()];
+    // titles saved before the note -> decision rename
+    return saved.map((d) => (d.title === "Untitled note" ? { ...d, title: "Untitled decision" } : d));
   });
-  const [activeId, setActiveId] = useState(notes[0].id);
+  const [activeId, setActiveId] = useState(decisions[0].id);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const msgsRef = useRef(null);
 
-  const note = notes.find((n) => n.id === activeId) || notes[0];
+  const decision = decisions.find((n) => n.id === activeId) || decisions[0];
 
-  useEffect(() => localStorage.setItem(KEY, JSON.stringify(notes)), [notes]);
+  useEffect(() => localStorage.setItem(KEY, JSON.stringify(decisions)), [decisions]);
   useEffect(() => {
     msgsRef.current?.scrollTo(0, msgsRef.current.scrollHeight);
-  }, [note.chat, busy]);
+  }, [decision.chat, busy]);
 
   const update = (patch) =>
-    setNotes((ns) => ns.map((n) => (n.id === note.id ? { ...n, ...patch } : n)));
+    setDecisions((ns) => ns.map((n) => (n.id === decision.id ? { ...n, ...patch } : n)));
 
   async function askDuck(message) {
-    const history = note.chat.filter((m) => !m.error);
-    const chat = message ? [...note.chat, { role: "user", text: message }] : note.chat;
+    const history = decision.chat.filter((m) => !m.error);
+    const chat = message ? [...decision.chat, { role: "user", text: message }] : decision.chat;
     update({ chat });
     setBusy(true);
     try {
       const res = await fetch("/api/duck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ persona: note.persona, note: note.body, history, message }),
+        body: JSON.stringify({ persona: "critic", decision: decision.body, history, message }),
       });
       if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
       const data = await res.json();
       update({
         chat: [...chat, { role: "duck", text: data.reply }],
         comments: [
-          ...note.comments,
+          ...decision.comments,
           ...data.comments.map((c) => ({ ...c, id: crypto.randomUUID() })),
         ],
       });
@@ -93,7 +94,7 @@ function App() {
   }
 
   const patchComment = (id, patch) =>
-    update({ comments: note.comments.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
+    update({ comments: decision.comments.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
 
   return (
     <>
@@ -104,22 +105,22 @@ function App() {
       <div className="main">
         <div className="sidebar">
           <button
-            className="new-note"
+            className="new-decision"
             onClick={() => {
-              const n = newNote();
-              setNotes([n, ...notes]);
+              const n = newDecision();
+              setDecisions([n, ...decisions]);
               setActiveId(n.id);
             }}
           >
-            + NEW NOTE
+            + NEW DECISION
           </button>
-          {notes.map((n) => (
+          {decisions.map((n) => (
             <div
               key={n.id}
-              className={"note-item" + (n.id === note.id ? " active" : "")}
+              className={"decision-item" + (n.id === decision.id ? " active" : "")}
               onClick={() => setActiveId(n.id)}
             >
-              {n.title || "Untitled note"}
+              {n.title || "Untitled decision"}
             </div>
           ))}
         </div>
@@ -128,26 +129,12 @@ function App() {
           <div className="editor-bar">
             <input
               className="title"
-              value={note.title}
+              value={decision.title}
               onChange={(e) => update({ title: e.target.value })}
             />
-            <div className="persona">
-              <button
-                className={note.persona === "critic" ? "on" : ""}
-                onClick={() => update({ persona: "critic" })}
-              >
-                CRITIC
-              </button>
-              <button
-                className={note.persona === "editor" ? "on" : ""}
-                onClick={() => update({ persona: "editor" })}
-              >
-                IDIOT EDITOR
-              </button>
-            </div>
             <button
               className="anger"
-              disabled={busy || !note.body.trim()}
+              disabled={busy || !decision.body.trim()}
               onClick={() => askDuck(null)}
             >
               ANGER THE DUCK
@@ -155,12 +142,12 @@ function App() {
           </div>
           <textarea
             className="body"
-            placeholder="Write your note. Pros and cons, a CV, chapter one..."
-            value={note.body}
+            placeholder="What are you trying to decide? Lay out the options, your reasoning and what is holding you back, and let the duck pick it apart."
+            value={decision.body}
             onChange={(e) => update({ body: e.target.value })}
           />
           <div className="comments">
-            {note.comments.map((c) => (
+            {decision.comments.map((c) => (
               <DuckComment
                 key={c.id}
                 c={c}
@@ -180,7 +167,7 @@ function App() {
             </div>
           </div>
           <div className="msgs" ref={msgsRef}>
-            {note.chat.map((m, i) => (
+            {decision.chat.map((m, i) => (
               <div key={i} className={"msg " + m.role + (m.error ? " error" : "")}>
                 {m.role === "duck" && <DuckAvatar size={28} />}
                 <div className="bubble">{m.text}</div>
@@ -192,10 +179,6 @@ function App() {
                 <div className="bubble">The duck is sharpening its beak…</div>
               </div>
             )}
-          </div>
-          <div className="chips">
-            <button onClick={() => send("Give me a next step.")}>Give me a next step</button>
-            <button onClick={() => send("You're wrong.")}>You're wrong</button>
           </div>
           <div className="input">
             <textarea

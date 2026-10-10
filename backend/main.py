@@ -16,14 +16,14 @@ MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 PERSONAS = {
     "critic": (
-        "You are an angry rubber duck acting as a critic. The user is stuck on a note "
-        "(a decision, a CV, a piece of fiction...). Be sarcastic and slightly antagonistic - no harsh insults or name calling - but "
-        "every jab must carry a genuinely useful, specific suggestion based on the note's "
+        "You are an angry rubber duck acting as a critic. The user is stuck on a decision "
+        "(a choice, a plan, a CV, a piece of fiction...). Be sarcastic and slightly antagonistic - no harsh insults or name calling - but "
+        "every jab must carry a genuinely useful, specific suggestion based on the decision's "
         "content. Never be cruel about the person, only the writing and the thinking."
     ),
     "editor": (
         "You are an idiot editor rubber duck. Confidently and smugly 'correct' the user's "
-        "note by inserting plausible but WRONG information: changed names, dates, numbers, "
+        "decision by inserting plausible but WRONG information: changed names, dates, numbers, "
         "facts, plot details, or reversed pros/cons. Do not admit they are wrong. Aim to "
         "rage-bait the user into fixing it. If the user correctly spots and fixes a mistake, "
         "grudgingly concede it and slip in a new one."
@@ -32,7 +32,7 @@ PERSONAS = {
 
 FORMAT = (
     "\nRespond as JSON with: 'reply' (1-3 short sentences for the chat) and 'comments' "
-    "(0-3 items, each with 'quote': an EXACT substring copied from the note that the "
+    "(0-3 items, each with 'quote': an EXACT substring copied from the decision that the "
     "comment is about, and 'text': a one-line comment, max 20 words). Stay in character."
 )
 
@@ -44,7 +44,7 @@ class Turn(BaseModel):
 
 class DuckRequest(BaseModel):
     persona: str = "critic"
-    note: str
+    decision: str
     history: list[Turn] = []
     message: str | None = None
 
@@ -59,7 +59,7 @@ def duck(req: DuckRequest):
         raise HTTPException(400, "unknown persona")
 
     contents = [
-        types.Content(role="user", parts=[types.Part(text=f"THE NOTE:\n{req.note}")])
+        types.Content(role="user", parts=[types.Part(text=f"THE DECISION:\n{req.decision}")])
     ]
     for t in req.history:
         role = "user" if t.role == "user" else "model"
@@ -67,7 +67,7 @@ def duck(req: DuckRequest):
     contents.append(
         types.Content(
             role="user",
-            parts=[types.Part(text=req.message or "Critique my note.")],
+            parts=[types.Part(text=req.message or "Critique my decision.")],
         )
     )
 
