@@ -1,0 +1,57 @@
+:root {
+  --red: #dd1c1a;
+  --yellow: #fffa70;
+  --black: #131515;
+  --grey: #2b2c28;
+  --blue: #339989;
+  --paper: #f3eee4;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-monospace, Menlo, monospace; color: var(--black); height: 100vh; }
+#root { height: 100vh; display: flex; flex-direction: column; }
+button { font: inherit; cursor: pointer; }
+
+.topbar { background: var(--yellow); height: 56px; border-bottom: 2px solid var(--black); display: flex; align-items: center; gap: 12px; padding: 0 20px; font-weight: 800; letter-spacing: 1px; }
+.beta { background: var(--red); color: #fff; font-size: 10px; padding: 3px 6px; }
+.saved { margin-left: auto; font-size: 11px; font-weight: 400; }
+.saved::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); margin-right: 6px; }
+
+.main { flex: 1; display: grid; grid-template-columns: 220px 1fr 380px; min-height: 0; }
+
+.sidebar { background: var(--paper); border-right: 1px solid #0002; padding: 16px; overflow: auto; }
+.new-note { width: 100%; background: var(--black); color: #fff; border: 0; padding: 12px; font-weight: 700; box-shadow: 3px 3px 0 var(--blue); margin-bottom: 20px; }
+.note-item { padding: 10px; margin-bottom: 6px; cursor: pointer; font-weight: 700; font-size: 14px; }
+.note-item.active { background: var(--yellow); box-shadow: -3px 0 0 var(--red); }
+
+.editor { background: var(--paper); background-image: radial-gradient(#0002 1px, transparent 1px); background-size: 20px 20px; padding: 20px 48px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.editor-bar { display: flex; gap: 10px; align-items: center; }
+.title { flex: 1; font: 700 26px Georgia, serif; border: 0; border-bottom: 2px solid var(--black); background: transparent; padding: 4px 0; outline: none; }
+.persona { display: flex; border: 2px solid var(--black); }
+.persona button { background: transparent; border: 0; padding: 8px 10px; font-size: 12px; }
+.persona button.on { background: var(--black); color: var(--yellow); }
+.anger { background: var(--yellow); border: 2px solid var(--black); box-shadow: 3px 3px 0 var(--red); padding: 10px 14px; font-weight: 800; }
+.anger:disabled { opacity: 0.6; }
+.body { min-height: 320px; flex: none; font: 18px/1.7 Georgia, serif; border: 0; background: transparent; resize: vertical; outline: none; }
+
+.comments { display: flex; flex-direction: column; gap: 8px; }
+.comment { background: var(--yellow); border-left: 4px solid var(--red); box-shadow: 2px 2px 0 var(--black); padding: 8px 10px; font-size: 12px; display: flex; gap: 8px; max-width: 520px; }
+.comment.resolved { opacity: 0.45; box-shadow: none; border-left-color: var(--blue); }
+.comment .quote { color: #0008; font-style: italic; display: block; margin-bottom: 2px; }
+.comment .acts { display: flex; gap: 10px; margin-top: 4px; }
+.comment .acts button { background: none; border: 0; padding: 0; font-size: 10px; text-decoration: underline; text-transform: uppercase; }
+
+.chat { background: var(--black); color: #fff; display: flex; flex-direction: column; min-height: 0; }
+.chat-head { padding: 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--grey); font-weight: 800; font-size: 13px; }
+.chat-head small { display: block; font-weight: 400; color: #fff9; font-size: 10px; }
+.chat-head small::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); margin-right: 6px; }
+.msgs { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.msg { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.4; }
+.msg .bubble { background: var(--grey); padding: 10px 12px; border: 1px solid #fff2; max-width: 280px; }
+.msg.user { justify-content: flex-end; }
+.msg.user .bubble { background: var(--yellow); color: var(--black); border-color: var(--blue); }
+.msg.error .bubble { border-color: var(--red); color: var(--red); }
+.chips { display: flex; gap: 8px; padding: 0 16px 8px; }
+.chips button { background: none; border: 1px solid #fff4; color: #fff; font-size: 10px; padding: 6px 8px; text-transform: uppercase; }
+.input { display: flex; gap: 8px; padding: 0 16px 16px; }
+.input textarea { flex: 1; background: transparent; border: 1px solid #fff4; color: #fff; padding: 10px; font: inherit; font-size: 13px; resize: none; height: 56px; }
+.input button { background: var(--red); color: #fff; border: 0; width: 44px; font-size: 18px; }

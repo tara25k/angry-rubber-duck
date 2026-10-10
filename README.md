@@ -1,2 +1,10 @@
-# angry-rubber-duck
-rubber duck but make him angry
+# The Angry Rubber Duck
+
+Note-taking prototype with an angry duck critic powered by Gemini (Vertex AI).
+
+```sh
+gcloud auth application-default login   # once
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --port 8000
+```
