@@ -91,12 +91,20 @@ function DecisionItem({ d, className, onSelect, onDelete }) {
   );
 }
 
-function DuckAvatar({ size = 32 }) {
+// anger 5: red, furious brows; 3-4: yellow, flat brows; 1-2: green, no brows
+const DUCK_LOOKS = {
+  angry: { bg: "#dd1c1a", body: "#fffa70", brow: "M13 13l10 4" },
+  calm: { bg: "#fffa70", body: "#f5b700", brow: "M13 14h10" },
+  happy: { bg: "#339989", body: "#fffa70" },
+};
+
+function DuckAvatar({ size = 32, anger = 5 }) {
+  const look = DUCK_LOOKS[anger >= 5 ? "angry" : anger >= 3 ? "calm" : "happy"];
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" style={{ flex: "none" }}>
-      <rect width="40" height="40" fill="#dd1c1a" />
-      <circle cx="19" cy="20" r="12" fill="#fffa70" />
-      <path d="M13 13l10 4" stroke="#131515" strokeWidth="2.5" />
+      <rect width="40" height="40" fill={look.bg} />
+      <circle cx="19" cy="20" r="12" fill={look.body} />
+      {look.brow && <path d={look.brow} stroke="#131515" strokeWidth="2.5" />}
       <circle cx="18" cy="19" r="1.8" fill="#131515" />
       <path d="M27 20h10l-3 5h-7z" fill="#dd1c1a" />
     </svg>
@@ -107,13 +115,13 @@ const RESOLUTIONS = { edited: "edited", addressed: "addressed", kept: "kept as i
 const MOODS = ["SATISFIED", "GRUDGINGLY IMPRESSED", "UNIMPRESSED", "ANNOYED", "FURIOUS"]; // anger 1-5
 
 // Open comments get onResolve + onKeep(reason); resolved ones get onReopen (or none).
-function DuckComment({ c, onResolve, onKeep, onReopen }) {
+function DuckComment({ c, anger, onResolve, onKeep, onReopen }) {
   const [keeping, setKeeping] = useState(false);
   const [why, setWhy] = useState("");
 
   return (
     <div className={"comment" + (c.resolved ? " resolved" : "")}>
-      <DuckAvatar size={20} />
+      <DuckAvatar size={20} anger={anger} />
       <div>
         <span className="quote">“{c.quote}”</span>
         {c.text}
@@ -330,7 +338,7 @@ function App() {
   return (
     <>
       <div className="topbar">
-        <DuckAvatar size={28} /> THE ANGRY RUBBER DUCK <span className="beta">BETA</span>
+        <DuckAvatar size={28} anger={decision.anger} /> THE ANGRY RUBBER DUCK <span className="beta">BEAKA</span>
         <span className="saved">SAVED</span>
       </div>
       <div className="main">
@@ -408,7 +416,7 @@ function App() {
 
         <div className="chat">
           <div className="chat-head">
-            <DuckAvatar size={44} />
+            <DuckAvatar size={44} anger={decision.anger} />
             <div>
               THE DUCK SAYS
               <small>
@@ -448,6 +456,7 @@ function App() {
             )}
             {open.map((c) => (
               <DuckComment
+                anger={decision.anger}
                 key={c.id}
                 c={c}
                 onResolve={resolve(c, "addressed")}
@@ -459,6 +468,7 @@ function App() {
                 <summary>Resolved ({resolved.length})</summary>
                 {resolved.map((c) => (
                   <DuckComment
+                    anger={decision.anger}
                     key={c.id}
                     c={c}
                     // reopening a comment whose quote was edited away would instantly re-resolve it

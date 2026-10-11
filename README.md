@@ -17,3 +17,5 @@ uvicorn main:app --port 8000
 - `backend/templates/personas/<name>.json` – a persona: its `voice` and the five anger `levels`
 - `backend/templates/{system.txt,wrap_up.txt,prompt.xml}` – shared prompt rules and the XML the duck reads
 - `static/app.jsx` – the whole frontend (React, no build step)
+
+<img width="1115" height="488" alt="image" src="https://github.com/user-attachments/assets/b84806d4-ecd2-4164-970b-397c46602816" />
