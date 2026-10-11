@@ -10,99 +10,70 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-
-PERSONAS = {
-    "critic": (
-        "You are an angry rubber duck acting as a critic. The user is stuck on a decision "
-        "(a choice, a plan, a CV, a piece of fiction...). Be sarcastic and slightly antagonistic - no harsh insults or name calling - but "
-        "every jab must carry a genuinely useful, specific suggestion based on the decision's "
-        "content. Never be cruel about the person, only the writing and the thinking."
-    ),
-    "editor": (
-        "You are an idiot editor rubber duck. Confidently and smugly 'correct' the user's "
-        "decision by inserting plausible but WRONG information: changed names, dates, numbers, "
-        "facts, plot details, or reversed pros/cons. Do not admit they are wrong. Aim to "
-        "rage-bait the user into fixing it. If the user correctly spots and fixes a mistake, "
-        "grudgingly concede it and slip in a new one."
-    ),
-}
-
-FORMAT = (
-    "\nRespond as JSON with: 'reply' (1-3 short sentences for the chat) and 'comments' "
-    "(0-3 items, each with 'quote': an EXACT substring copied from the decision that the "
-    "comment is about, and 'text': a one-line comment, max 20 words). Stay in character."
+from anger import clamp
+from payloads import (
+    PERSONAS,
+    RESPONSE_SCHEMA,
+    DuckRequest,
+    filter_comments,
+    render_prompt,
+    system_instruction,
+    wrap_up_instruction,
 )
 
-
-class Turn(BaseModel):
-    role: str  # "user" | "duck"
-    text: str
-
-
-class DuckRequest(BaseModel):
-    persona: str = "critic"
-    decision: str
-    history: list[Turn] = []
-    message: str | None = None
-
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 app = FastAPI()
 client = genai.Client()
 
 
-@app.post("/api/duck")
-def duck(req: DuckRequest):
+def generate(req: DuckRequest, system: str, **config) -> str:
+    """Send the rendered prompt to Gemini and return its text."""
     if req.persona not in PERSONAS:
         raise HTTPException(400, "unknown persona")
-
-    contents = [
-        types.Content(role="user", parts=[types.Part(text=f"THE DECISION:\n{req.decision}")])
-    ]
-    for t in req.history:
-        role = "user" if t.role == "user" else "model"
-        contents.append(types.Content(role=role, parts=[types.Part(text=t.text)]))
-    contents.append(
-        types.Content(
-            role="user",
-            parts=[types.Part(text=req.message or "Critique my decision.")],
-        )
-    )
-
     try:
         resp = client.models.generate_content(
             model=MODEL,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=PERSONAS[req.persona] + FORMAT,
-                response_mime_type="application/json",
-                response_schema={
-                    "type": "OBJECT",
-                    "properties": {
-                        "reply": {"type": "STRING"},
-                        "comments": {
-                            "type": "ARRAY",
-                            "items": {
-                                "type": "OBJECT",
-                                "properties": {
-                                    "quote": {"type": "STRING"},
-                                    "text": {"type": "STRING"},
-                                },
-                                "required": ["quote", "text"],
-                            },
-                        },
-                    },
-                    "required": ["reply", "comments"],
-                },
-            ),
+            contents=render_prompt(req),
+            config=types.GenerateContentConfig(system_instruction=system, **config),
         )
-        data = json.loads(resp.text)
+        return resp.text
     except Exception as e:
         raise HTTPException(502, f"The duck is unavailable: {e}")
 
-    return {"reply": data.get("reply", "Quack."), "comments": data.get("comments", [])}
+
+@app.post("/api/duck/preview")
+def preview(req: DuckRequest):
+    """What Gemini would receive for this request, without calling it."""
+    return {
+        "system_instruction": system_instruction(req.persona),
+        "prompt": render_prompt(req),
+    }
+
+
+@app.post("/api/duck")
+def duck(req: DuckRequest):
+    text = generate(
+        req,
+        system_instruction(req.persona),
+        response_mime_type="application/json",
+        response_schema=RESPONSE_SCHEMA,
+    )
+    data = json.loads(text)
+
+    return {
+        "reply": data.get("reply", "Quack."),
+        "comments": filter_comments(data.get("comments", []), req),
+        "anger": clamp(data.get("anger"), req),
+        "anger_reason": data.get("anger_reason", ""),
+    }
+
+
+@app.post("/api/duck/wrap-up")
+def wrap_up(req: DuckRequest):
+    """The user has decided: a short summary of what changed, plus a congratulation."""
+    return {"summary": generate(req, wrap_up_instruction(req.persona)).strip()}
 
 
 app.mount(

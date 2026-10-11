@@ -26,14 +26,16 @@ button { font: inherit; cursor: pointer; }
 .editor { background: var(--paper); background-image: radial-gradient(#0002 1px, transparent 1px); background-size: 20px 20px; padding: 20px 48px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
 .editor-bar { display: flex; gap: 10px; align-items: center; }
 .title { flex: 1; font: 700 26px Georgia, serif; border: 0; border-bottom: 2px solid var(--black); background: transparent; padding: 4px 0; outline: none; }
-.anger { background: var(--yellow); border: 2px solid var(--black); box-shadow: 3px 3px 0 var(--red); padding: 10px 14px; font-weight: 800; }
+.anger { background: var(--red); border: 2px solid var(--black); box-shadow: 3px 3px 0 var(--yellow); padding: 10px 14px; font-weight: 800; }
 .anger:disabled { opacity: 0.6; }
-.body { min-height: 320px; flex: none; font: 18px/1.7 Georgia, serif; border: 0; background: transparent; resize: vertical; outline: none; }
+.body { min-height: 320px; flex: none; font: 18px/1.7 Georgia, serif; white-space: pre-wrap; overflow-wrap: anywhere; outline: none; }
+.body:empty::before { content: attr(data-placeholder); color: #0006; }
+::highlight(duck) { background-color: #fffa70; text-decoration: underline wavy #dd1c1a; }
 
-.comments { display: flex; flex-direction: column; gap: 8px; }
-.comment { background: var(--yellow); border-left: 4px solid var(--red); box-shadow: 2px 2px 0 var(--black); padding: 8px 10px; font-size: 12px; display: flex; gap: 8px; max-width: 520px; }
+.comment { background: var(--yellow); color: var(--black); border-left: 4px solid var(--red); box-shadow: 2px 2px 0 var(--black); padding: 8px 10px; font-size: 12px; display: flex; gap: 8px; }
 .comment.resolved { opacity: 0.45; box-shadow: none; border-left-color: var(--blue); }
 .comment .quote { color: #0008; font-style: italic; display: block; margin-bottom: 2px; }
+.comment .tag { display: inline-block; margin-left: 6px; font-size: 10px; text-transform: uppercase; color: #0008; }
 .comment .acts { display: flex; gap: 10px; margin-top: 4px; }
 .comment .acts button { background: none; border: 0; padding: 0; font-size: 10px; text-decoration: underline; text-transform: uppercase; }
 
@@ -44,9 +46,19 @@ button { font: inherit; cursor: pointer; }
 .msgs { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .msg { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.4; }
 .msg .bubble { background: var(--grey); padding: 10px 12px; border: 1px solid #fff2; max-width: 280px; }
-.msg.user { justify-content: flex-end; }
-.msg.user .bubble { background: var(--yellow); color: var(--black); border-color: var(--blue); }
 .msg.error .bubble { border-color: var(--red); color: var(--red); }
-.input { display: flex; gap: 8px; padding: 0 16px 16px; }
-.input textarea { flex: 1; background: transparent; border: 1px solid #fff4; color: #fff; padding: 10px; font: inherit; font-size: 13px; resize: none; height: 56px; }
-.input button { background: var(--red); color: #fff; border: 0; width: 44px; font-size: 18px; }
+.msgs details { display: flex; flex-direction: column; gap: 8px; }
+.msgs summary { cursor: pointer; font-size: 11px; color: #fff9; text-transform: uppercase; margin-bottom: 8px; }
+.meter { margin-left: 8px; }
+.meter i { display: inline-block; width: 8px; height: 8px; margin-left: 3px; background: var(--grey); }
+.meter i.on { background: var(--red); }
+.chat-head .mood-reason { margin-top: 4px; font-style: italic; }
+.chat-head .mood-reason::before { content: none; }
+.note { border: 0; border-bottom: 1px dashed var(--black); background: transparent; padding: 4px 0; font: 13px Georgia, serif; outline: none; }
+.comment .reason { display: block; margin-top: 2px; font-style: italic; color: #0009; }
+.comment .why { display: flex; gap: 8px; margin-top: 6px; }
+.comment .why input { flex: 1; min-width: 0; font: inherit; padding: 2px 4px; border: 1px solid var(--black); background: #fff8; }
+.comment .why button { background: none; border: 0; padding: 0; font-size: 10px; text-decoration: underline; text-transform: uppercase; }
+.decision-item.done, .decision-item.active.done { background: var(--blue); color: #fff; }
+.msg.done .bubble { background: var(--blue); border-color: #fff4; }
+.wrap-up { background: var(--blue); color: #fff; border: 2px solid #fff; padding: 10px; font-weight: 800; }

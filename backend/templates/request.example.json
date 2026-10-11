@@ -1,0 +1,27 @@
+{
+  "persona": "critic",
+  "anger": 4,
+  "title": "Which career path should I take?",
+  "body": "Staying: good salary, boring work.\nFreelancing: unstable income, freedom.\nStartup: equity, long hours.",
+  "note": "I have six months of savings, so the income risk is smaller than it looks.",
+  "made_changes": true,
+  "first_draft": {
+    "title": "Career path?",
+    "body": "Staying: good salary.\nFreelancing: freedom."
+  },
+  "history": [
+    { "role": "duck", "text": "Two options and four words of reasoning. Impressive economy." },
+    { "role": "user", "text": "Added a startup option." },
+    { "role": "duck", "text": "Equity is a lottery ticket, not a plan. What's the strike price?" }
+  ],
+  "comments": [
+    {
+      "quote": "Staying: good salary",
+      "text": "Good compared to what? Give the figure.",
+      "resolved": true,
+      "resolution": "kept",
+      "reason": "It's 20% above market for my role, I checked."
+    },
+    { "quote": "Startup: equity", "text": "Equity is worth nothing until it's liquid. Say what it's worth.", "resolved": true, "resolution": "edited" }
+  ]
+}

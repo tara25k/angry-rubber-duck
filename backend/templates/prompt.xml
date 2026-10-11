@@ -1,0 +1,33 @@
+<duck_session>
+{% if first_draft %}
+  <first_draft>
+    <title>{{ first_draft.title }}</title>
+    <context>{{ first_draft.body }}</context>
+  </first_draft>
+{% endif %}
+{% if previous_round %}
+  <previous_round>
+{% if previous_round.user %}
+    <user>{{ previous_round.user }}</user>
+{% endif %}
+    <duck>{{ previous_round.duck }}</duck>
+  </previous_round>
+{% endif %}
+  <existing_comments>
+{% for c in comments %}
+    <comment status="{{ 'resolved' if c.resolved else 'open' }}"{% if c.resolved and c.resolution %} resolution="{{ c.resolution }}"{% endif %}>
+      <quote>{{ c.quote }}</quote>
+      <text>{{ c.text }}</text>
+{% if c.reason %}
+      <reason>{{ c.reason }}</reason>
+{% endif %}
+    </comment>
+{% endfor %}
+  </existing_comments>
+  <progress round="{{ progress.round }}"{% if progress.previous_anger %} previous_anger="{{ progress.previous_anger }}"{% endif %} anger_range="{{ progress.anger_range }}" open="{{ progress.open }}" kept="{{ progress.kept }}" reasoned="{{ progress.reasoned }}" edited="{{ progress.edited }}" addressed="{{ progress.addressed }}" made_changes="{{ 'yes' if progress.made_changes else 'no' }}"/>
+  <current_round>
+    <title>{{ title }}</title>
+    <context>{{ body }}</context>
+    <note>{{ note or "" }}</note>
+  </current_round>
+</duck_session>
