@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const KEY = "angry-duck-notes";
 const newDecision = () => ({
@@ -9,6 +11,85 @@ const newDecision = () => ({
   comments: [],
   chat: [],
 });
+
+// Cheap heuristic: any common markdown construct means we show the rendered preview.
+const MARKDOWN_SIGNS = [
+  /^#{1,6}\s+\S/m, // headings
+  /^\s*([-*+]|\d+[.)])\s+\S/m, // lists
+  /^\s*>\s?\S/m, // blockquotes
+  /^\s*(```|~~~)/m, // code fences
+  /^\s*\|.+\|\s*$/m, // tables
+  /^\s*([-*_])\1{2,}\s*$/m, // horizontal rules
+  /\*\*[^*\n]+\*\*|__[^_\n]+__/, // bold
+  /\[[^\]\n]+\]\([^)\n]+\)/, // links
+  /`[^`\n]+`/, // inline code
+];
+const looksLikeMarkdown = (text) => MARKDOWN_SIGNS.some((re) => re.test(text));
+
+const DELETE_DRAG = 90; // px to slide left before releasing deletes
+
+// A sidebar row: click selects, slide left past DELETE_DRAG and release deletes.
+function DecisionItem({ d, className, onSelect, onDelete }) {
+  const [dx, setDx] = useState(0);
+  const drag = useRef(null);
+  const wasDragged = useRef(false);
+
+  const onPointerDown = (e) => {
+    drag.current = { x: e.clientX, dx: 0 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e) => {
+    if (!drag.current) return;
+    const delta = Math.min(0, e.clientX - drag.current.x);
+    drag.current.dx = delta;
+    setDx(delta);
+  };
+  const onPointerEnd = () => {
+    if (!drag.current) return;
+    const { dx: finalDx } = drag.current;
+    drag.current = null;
+    setDx(0);
+    if (finalDx < -4) {
+      // swallow the click that follows a drag
+      wasDragged.current = true;
+      setTimeout(() => (wasDragged.current = false), 0);
+    }
+    if (finalDx <= -DELETE_DRAG) onDelete();
+  };
+
+  return (
+    <div className="decision-row">
+      <div className="delete-hint" style={{ opacity: Math.min(1, -dx / DELETE_DRAG) }}>
+        <svg
+          role="img"
+          aria-label="Delete"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ transform: -dx >= DELETE_DRAG ? "scale(1.3)" : "none", transition: "transform 0.1s" }}
+        >
+          <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
+        </svg>
+      </div>
+      <div
+        className={className}
+        style={{ transform: `translateX(${dx}px)`, transition: drag.current ? "none" : "transform 0.15s" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        onClick={() => !wasDragged.current && onSelect()}
+      >
+        {d.title || "Untitled decision"}
+      </div>
+    </div>
+  );
+}
 
 function DuckAvatar({ size = 32 }) {
   return (
@@ -110,7 +191,7 @@ function Editor({ id, value, onChange, comments }) {
     <div
       ref={ref}
       className="body"
-      contentEditable="true"
+      contentEditable="plaintext-only" // real "\n" line breaks, so markdown headings and lists survive
       suppressContentEditableWarning
       data-placeholder="Context: lay out the options, pros and cons, and what is holding you back, and let the duck pick it apart."
       onInput={(e) => onChange(e.currentTarget.textContent)}
@@ -131,6 +212,9 @@ function App() {
   const resolved = decision.comments.filter((c) => c.resolved);
   const verdict = decision.chat.findLast((m) => m.role === "duck");
   const note = (decision.note || "").trim();
+  const [view, setView] = useState("write");
+  const isMarkdown = looksLikeMarkdown(decision.body);
+  const showPreview = isMarkdown && view === "preview";
 
   // a new round has to be earned: edit the decision, resolve a comment, or add a note
   const last = decision.lastAsked;
@@ -145,9 +229,23 @@ function App() {
   const canWrapUp = decision.anger <= 2 && !decision.decided;
 
   useEffect(() => localStorage.setItem(KEY, JSON.stringify(decisions)), [decisions]);
+  useEffect(() => setView("write"), [activeId]);
 
   const update = (patch) =>
     setDecisions((ns) => ns.map((n) => (n.id === decision.id ? { ...n, ...patch } : n)));
+
+  function deleteDecision(id) {
+    const target = decisions.find((d) => d.id === id);
+    if (
+      target.body.trim() &&
+      !window.confirm(`Delete "${target.title || "Untitled decision"}"? This can't be undone.`)
+    )
+      return;
+    const rest = decisions.filter((d) => d.id !== id);
+    const next = rest.length ? rest : [newDecision()];
+    setDecisions(next);
+    if (id === activeId) setActiveId(next[0].id);
+  }
 
   const patchComments = (match, patch) =>
     update({ comments: decision.comments.map((c) => (match(c) ? { ...c, ...patch } : c)) });
@@ -248,15 +346,15 @@ function App() {
             + NEW DECISION
           </button>
           {decisions.map((n) => (
-            <div
+            <DecisionItem
               key={n.id}
+              d={n}
               className={
                 "decision-item" + (n.id === decision.id ? " active" : "") + (n.decided ? " done" : "")
               }
-              onClick={() => setActiveId(n.id)}
-            >
-              {n.title || "Untitled decision"}
-            </div>
+              onSelect={() => setActiveId(n.id)}
+              onDelete={() => deleteDecision(n.id)}
+            />
           ))}
         </div>
 
@@ -282,12 +380,30 @@ function App() {
             value={decision.note || ""}
             onChange={(e) => update({ note: e.target.value })}
           />
-          <Editor
-            id={decision.id}
-            value={decision.body}
-            onChange={(body) => update({ body })}
-            comments={decision.comments}
-          />
+          {isMarkdown && (
+            <div className="view-toggle">
+              <button className={showPreview ? "" : "on"} onClick={() => setView("write")}>
+                WRITE
+              </button>
+              <button className={showPreview ? "on" : ""} onClick={() => setView("preview")}>
+                PREVIEW
+              </button>
+            </div>
+          )}
+          {/* kept mounted (just hidden) so the caret and the duck's highlights survive a tab switch */}
+          <div hidden={showPreview}>
+            <Editor
+              id={decision.id}
+              value={decision.body}
+              onChange={(body) => update({ body })}
+              comments={decision.comments}
+            />
+          </div>
+          {showPreview && (
+            <div className="body md">
+              <Markdown remarkPlugins={[remarkGfm]}>{decision.body}</Markdown>
+            </div>
+          )}
         </div>
 
         <div className="chat">
